@@ -1,0 +1,116 @@
+name: Notify Slack if Ready for Review
+
+on:
+  workflow_call:
+    secrets:
+      slack-webhook-url:
+        description: 'Slack webhook to call to trigger the Slack workflow'
+        required: true
+
+  # In order to work with dependabot PRs, we need to use `pull_request_target`
+  # instead of `pull_request`.
+  #
+  # See:
+  # - https://github.com/dependabot/dependabot-core/issues/3253#issuecomment-795140576
+  # - https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
+  pull_request_target:
+    types: [opened, ready_for_review]
+
+jobs:
+  ready-for-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        continue-on-error: true # avoid failing the build if we can't send the notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_READY_FOR_REVIEW_WEBHOOK_URL }}
+        with:
+          script: |
+            if (context.payload.pull_request.draft) {
+              // the 'opened' action type is also triggered for draft PRs
+              core.info('Skipping because PR is a draft')
+              return
+            }
+
+            const https = require('https')
+
+            let webhookUrl
+
+            try {
+              webhookUrl = new URL(process.env.SLACK_WEBHOOK_URL)
+            } catch {
+              core.warning('Webhook URL is not a valid URL')
+              return
+            }
+
+            const { pull_request: pr } = context.payload;
+
+            const payload = {
+              repo_name: context.repo.repo,
+              pr_url: pr.html_url,
+              pr_number: pr.number,
+              pr_title: pr.title,
+              pr_author_github_username: pr.user.login
+            }
+
+            const requestBody = JSON.stringify(payload, (key, value) => {
+              // slack webhook only accepts string values, so we need to cast
+              // each of the values to a string
+
+              if (key === '') {
+                // ... except we _don't_ want to serialize anything when this
+                // function is first called with an empty key, because the
+                // value here is the object being serialized.
+                return value
+              }
+
+              return value?.toString()
+            })
+
+            const options = {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+                'content-length': Buffer.byteLength(requestBody),
+              },
+            }
+
+            return new Promise((resolve) => {
+              // actions/github-script@v6 uses Node 16, which does not have
+              // fetch globally available. Instead, we need to use the low-level
+              // https API :(
+
+              const req = https.request(webhookUrl, options, (res) => {
+                res.setEncoding('utf8')
+
+                res.once('error', (error) => {
+                  core.warning(`Error receiving HTTPS response: ${err.message}`)
+                  resolve()
+                })
+
+                let responseBodyChunks = []
+
+                res.on('data', (chunk) => {
+                  responseBodyChunks.push(chunk)
+                })
+
+                res.once('end', () => {
+                  if (res.statusCode !== 200) {
+                    core.warning(`Received non-200 status code: ${res.statusCode}`)
+                  }
+
+                  core.info(responseBodyChunks.join(''))
+
+                  resolve()
+                })
+              })
+
+              req.once('error', (err) => {
+                core.warning('Error making HTTPS request: ${err.message}')
+                resolve()
+              })
+
+              req.write(requestBody)
+
+              req.end()
+            })
