@@ -38,6 +38,14 @@ jobs:
             try {
               // ensure we're working with a valid URL
               webhookUrl = new URL(rawWebhookUrl)
+
+              // register potentially sensitive components of the URL as
+              // secrets, in case something causes the individual components to
+              // be logged out separately from the entire URL.
+              core.setSecret(webhookUrl.href)
+              core.setSecret(webhookUrl.pathname)
+              core.setSecret(webhookUrl.hash)
+              core.setSecret(webhookUrl.search)
             } catch {
               core.warning('Webhook URL is not a valid URL')
               return
