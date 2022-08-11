@@ -18,7 +18,7 @@ on:
     types: [opened, ready_for_review]
 
 jobs:
-  Ready-for-Review:
+  ready_for_review:
     uses: ForwardFinancing/github-workflows/.github/workflows/ready-for-review.yml@main
     secrets:
       SLACK_READY_FOR_REVIEW_WEBHOOK_URL: ${{ secrets.SLACK_READY_FOR_REVIEW_WEBHOOK_URL }}
