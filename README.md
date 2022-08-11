@@ -16,7 +16,7 @@ https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-r
 >
 > - Pair with a CI/CD SME and/or someone from the S&C team
 >   - This will help catch any issues early, before they've been pushed up to the repo
-> - [Squash commits](https://stackoverflow.com/questions/6934752/combining-multiple-commits-before-pushing-in-git) on your branches before pushing them up for code review
+> - **On your local machine**, [squash the commits of a branch](https://stackoverflow.com/questions/6934752/combining-multiple-commits-before-pushing-in-git) before pushing the branch up for code review
 >   - This will help avoid leaking secrets that might have been commited during local development, but are not obviously in a PR
 
 ---
