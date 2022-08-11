@@ -83,8 +83,30 @@ jobs:
 
               const requestBody = JSON.stringify(
                 Object.fromEntries(
-                  // slack webhook only accepts string values, so we need to
-                  // cast each of the values in the payload to a string
+                  // The Slack webhook only accepts string values, so we need to
+                  // cast each of the values in the payload to a string or it
+                  // will reject our request.
+                  //
+                  // Alternatively, we could cast any non-string values to
+                  // strings on a case-by-case basis, but:
+                  //
+                  // - it's really easy to forget to do that
+                  //
+                  // - there's not really any way to test the workflows
+                  //   until they've been merged to main
+                  //
+                  // - which means that if we add a new non-string field in the
+                  //   future and forget to stringify it, everything will _look_
+                  //   OK until we merge it to main, where it will fail, and
+                  //   we'd have to create a new PR just to serialize it.
+                  //
+                  // By using this serializer, we don't have to worry about
+                  // forgetting to stringify anything.
+                  //
+                  // Note that if any of the values are nullish, they'll get
+                  // sent across as 'null' or 'undefined', which will look weird
+                  // in Slack, but will at least let us know there's something
+                  // wrong without breaking the entire workflow.
                   Object.entries(payload).map(([key, value]) => [key, `${value}`])
                 )
               )
