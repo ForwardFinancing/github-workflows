@@ -73,19 +73,13 @@ jobs:
                 pr_author_github_username: pr.user.login
               }
 
-              const requestBody = JSON.stringify(payload, (key, value) => {
-                // slack webhook only accepts string values, so we need to cast
-                // each of the values to a string
-
-                if (key === '') {
-                  // ... except we _don't_ want to serialize anything when this
-                  // function is first called with an empty key, because the
-                  // value here is the object being serialized.
-                  return value
-                }
-
-                return value?.toString()
-              })
+              const requestBody = JSON.stringify(
+                Object.fromEntries(
+                  // slack webhook only accepts string values, so we need to
+                  // cast each of the values in the payload to a string
+                  Object.entries(payload).map(([key, value]) => [key, `${value}`])
+                )
+              )
 
               const options = {
                 method: 'POST',
