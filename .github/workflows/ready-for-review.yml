@@ -17,7 +17,8 @@ on:
     types: [opened, ready_for_review]
 
 jobs:
-  ready_for_review:
+  notify_slack:
+    name: Notify Slack
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-22.04
     steps:
