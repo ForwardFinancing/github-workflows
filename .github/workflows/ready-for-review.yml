@@ -18,6 +18,7 @@ on:
 
 jobs:
   ready_for_review:
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/github-script@v6
@@ -52,20 +53,6 @@ jobs:
             }
 
             const { pull_request: pr } = context.payload
-
-            if (pr.draft) {
-              // this workflow is expected to be called for both the 'opened'
-              // and 'ready_for_review' action types on PRs.
-              //
-              // the 'ready_for_review' type is only triggered when a draft PR
-              // is marked as ready for review, but the the 'opened' action type
-              // is triggered for draft PRs.
-              //
-              // in order to avoid sending notifications for PRs that are opened
-              // as drafts, we need to bail early from this job.
-              core.info('Skipping because PR is a draft')
-              return
-            }
 
             return new Promise((resolve) => {
               // actions/github-script@v6 uses Node 16, which does not have
