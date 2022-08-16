@@ -2,6 +2,13 @@ name: Run jobs if ready for review
 
 on:
   workflow_call:
+    inputs:
+      slack_repo_emoji:
+        description: ':slack-style: emoji to help identify the repo in Slack notifications'
+        type: string
+        required: false
+        default: ':octocat:'
+
     secrets:
       SLACK_READY_FOR_REVIEW_WEBHOOK_URL:
         description: 'Slack webhook to call to trigger the Slack workflow'
@@ -25,6 +32,7 @@ jobs:
       - uses: actions/github-script@v6
         continue-on-error: true # avoid failing the build if we can't send the notification
         env:
+          SLACK_REPO_EMOJI: ${{ inputs.slack_repo_emoji }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_READY_FOR_REVIEW_WEBHOOK_URL }}
         with:
           script: |
@@ -63,6 +71,7 @@ jobs:
 
               const payload = {
                 repo_name: context.repo.repo,
+                repo_emoji: process.env.SLACK_REPO_EMOJI,
                 pr_url: pr.html_url,
                 pr_number: pr.number,
                 pr_title: pr.title,
