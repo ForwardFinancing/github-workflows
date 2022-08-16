@@ -2,6 +2,13 @@ name: Run jobs if ready for review
 
 on:
   workflow_call:
+    inputs:
+      slack_repo_emoji:
+        description: ':slack-style: emoji to help identify the repo in Slack notifications'
+        type: string
+        required: false
+        default: ':octocat:'
+
     secrets:
       SLACK_READY_FOR_REVIEW_WEBHOOK_URL:
         description: 'Slack webhook to call to trigger the Slack workflow'
@@ -17,12 +24,15 @@ on:
     types: [opened, ready_for_review]
 
 jobs:
-  ready_for_review:
+  notify_slack:
+    name: Notify Slack
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/github-script@v6
         continue-on-error: true # avoid failing the build if we can't send the notification
         env:
+          SLACK_REPO_EMOJI: ${{ inputs.slack_repo_emoji }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_READY_FOR_REVIEW_WEBHOOK_URL }}
         with:
           script: |
@@ -53,20 +63,6 @@ jobs:
 
             const { pull_request: pr } = context.payload
 
-            if (pr.draft) {
-              // this workflow is expected to be called for both the 'opened'
-              // and 'ready_for_review' action types on PRs.
-              //
-              // the 'ready_for_review' type is only triggered when a draft PR
-              // is marked as ready for review, but the the 'opened' action type
-              // is triggered for draft PRs.
-              //
-              // in order to avoid sending notifications for PRs that are opened
-              // as drafts, we need to bail early from this job.
-              core.info('Skipping because PR is a draft')
-              return
-            }
-
             return new Promise((resolve) => {
               // actions/github-script@v6 uses Node 16, which does not have
               // fetch globally available. Instead, we need to use the low-level
@@ -75,6 +71,7 @@ jobs:
 
               const payload = {
                 repo_name: context.repo.repo,
+                repo_emoji: process.env.SLACK_REPO_EMOJI,
                 pr_url: pr.html_url,
                 pr_number: pr.number,
                 pr_title: pr.title,

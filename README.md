@@ -5,7 +5,7 @@ https://docs.github.com/en/actions/using-workflows/reusing-workflows#calling-a-r
 ---
 
 > **Warning**
-> 
+>
 > ## This is a public repo!
 >
 > **Be extra careful with any commits that you make to this repo.**
@@ -38,7 +38,10 @@ on:
 
 jobs:
   ready_for_review:
+    name: 'Ready for Review'
     uses: ForwardFinancing/github-workflows/.github/workflows/ready-for-review.yml@main
+    with:
+      slack_repo_emoji: ':octocat:'
     secrets:
       SLACK_READY_FOR_REVIEW_WEBHOOK_URL: ${{ secrets.SLACK_READY_FOR_REVIEW_WEBHOOK_URL }}
 ```
